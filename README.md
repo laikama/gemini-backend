@@ -59,7 +59,7 @@ curl http://localhost:3000/ping
 ```
 Response:
 ```json
-{"status":"alive"}
+{"status":"alive","version":"0.1.0","commit":null}
 ```
 
 ## Render Deploy

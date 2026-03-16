@@ -2,6 +2,7 @@ import express from "express";
 import multer from "multer";
 import os from "os";
 import path from "path";
+import fs from "fs";
 import { mkdir, unlink } from "fs/promises";
 import { createJob, getJob, markCompleted, markFailed, cleanupOldJobs } from "./jobStore.js";
 import { transcribeWithGemini } from "./geminiClient.js";
@@ -11,6 +12,16 @@ const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 const PROMPT =
   process.env.GEMINI_TRANSCRIBE_PROMPT ||
   "请将这段音频转写为完整文本，保持原始语言，不要翻译。";
+const packageJsonPath = new URL("./package.json", import.meta.url);
+const packageVersion = (() => {
+  try {
+    const raw = fs.readFileSync(packageJsonPath, "utf8");
+    return JSON.parse(raw)?.version || "unknown";
+  } catch {
+    return "unknown";
+  }
+})();
+const APP_VERSION = process.env.APP_VERSION || packageVersion;
 const TMP_DIR =
   process.env.UPLOAD_TMP_DIR || path.join(os.tmpdir(), "gemini-audio-uploads");
 const JOB_TTL_HOURS = Number(process.env.JOB_TTL_HOURS || 24);
@@ -45,7 +56,11 @@ function buildPromptForLocale(locale) {
 }
 
 app.get("/ping", (req, res) => {
-  res.status(200).json({ status: "alive" });
+  res.status(200).json({
+    status: "alive",
+    version: APP_VERSION,
+    commit: process.env.RENDER_GIT_COMMIT || null,
+  });
 });
 
 app.post("/api/upload", upload.single("file"), (req, res) => {
