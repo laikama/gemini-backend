@@ -1,0 +1,17 @@
+{
+  "name": "macspeechtranscribe-gemini-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@google/genai": "^0.9.0",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}
