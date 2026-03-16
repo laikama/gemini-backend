@@ -25,10 +25,15 @@ GEMINI_API_KEY=YOUR_KEY npm start
 - Content-Type: `multipart/form-data`
 - Field name: `file`
 - File: `.m4a` (AAC, 16kHz, mono, 32kbps)
+- Optional text field: `prompt` (overrides the default transcription prompt)
+- Optional text field: `locale` (e.g. `en-US`, used to build a default prompt when `prompt` is missing)
 
 Example:
 ```bash
-curl -F "file=@/path/to/audio.m4a" http://localhost:3000/api/upload
+curl -F "file=@/path/to/audio.m4a" \\
+     -F "locale=en-US" \\
+     -F "prompt=Please transcribe in the original language. Do not translate." \\
+     http://localhost:3000/api/upload
 ```
 Response:
 ```json

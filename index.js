@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 const PROMPT =
   process.env.GEMINI_TRANSCRIBE_PROMPT ||
-  "请将这段会议音频转写为完整的中文文本";
+  "请将这段音频转写为完整文本，保持原始语言，不要翻译。";
 const TMP_DIR =
   process.env.UPLOAD_TMP_DIR || path.join(os.tmpdir(), "gemini-audio-uploads");
 const JOB_TTL_HOURS = Number(process.env.JOB_TTL_HOURS || 24);
@@ -35,6 +35,15 @@ const upload = multer({
   },
 });
 
+function buildPromptForLocale(locale) {
+  if (!locale) return PROMPT;
+  const normalized = locale.trim().toLowerCase();
+  if (normalized.startsWith("zh")) {
+    return "请将这段音频转写为完整文本，保持原始语言，不要翻译。";
+  }
+  return "Please transcribe the audio verbatim in the original language. Do not translate.";
+}
+
 app.get("/ping", (req, res) => {
   res.status(200).json({ status: "alive" });
 });
@@ -44,12 +53,22 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
     res.status(400).json({ error: "Missing audio file" });
     return;
   }
+  const locale =
+    typeof req.body?.locale === "string" && req.body.locale.trim()
+      ? req.body.locale.trim()
+      : null;
+  const prompt =
+    typeof req.body?.prompt === "string" && req.body.prompt.trim()
+      ? req.body.prompt.trim()
+      : buildPromptForLocale(locale);
 
   const { jobId } = createJob({
     originalName: req.file.originalname,
     mimeType: req.file.mimetype,
     size: req.file.size,
     localPath: req.file.path,
+    prompt,
+    locale,
   });
 
   res.status(200).json({
@@ -96,10 +115,12 @@ app.get("/api/status", (req, res) => {
 
 async function processJob({ jobId, filePath, mimeType }) {
   try {
+    const job = getJob(jobId);
+    const prompt = job?.prompt || buildPromptForLocale(job?.locale);
     const { text } = await transcribeWithGemini({
       filePath,
       mimeType,
-      prompt: PROMPT,
+      prompt,
       model: MODEL,
     });
     markCompleted(jobId, text);

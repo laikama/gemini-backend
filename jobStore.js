@@ -6,12 +6,14 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-export function createJob({ originalName, mimeType, size, localPath }) {
+export function createJob({ originalName, mimeType, size, localPath, prompt, locale }) {
   const jobId = `task_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
   const job = {
     status: "processing",
     result: null,
     error: null,
+    prompt,
+    locale,
     createdAt: nowIso(),
     updatedAt: nowIso(),
     file: {
